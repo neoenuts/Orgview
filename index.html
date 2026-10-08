@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Org Viewer">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1e2127">
+<title>Org Viewer</title>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #1e2127;
+  --bg-alt: #252932;
+  --sidebar-bg: #191c22;
+  --text: #d8dee9;
+  --muted: #6b7280;
+  --heading1: #f6c177;
+  --heading2: #a8d8b9;
+  --heading3: #9ecbff;
+  --heading4: #c9a8e9;
+  --heading5: #f0a8c0;
+  --heading6: #f0d8a8;
+  --todo: #f28fad;
+  --done: #a8d8b9;
+  --priority: #f6c177;
+  --tag-bg: #2d3340;
+  --tag-text: #9ecbff;
+  --timestamp: #c9a8e9;
+  --drawer: #6b7280;
+  --clock: #7fb8c4;
+  --border: #323847;
+  --accent: #9ecbff;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+  margin: 0; padding: 0; height: 100%;
+  background: var(--bg); color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  font-size: 16px;
+  overflow: hidden;
+}
+#app { display: flex; height: 100%; width: 100%; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+/* Sidebar */
+#sidebar {
+  width: 260px; min-width: 260px;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  transition: margin-left 0.25s ease;
+  height: 100%;
+  overflow: hidden;
+}
+#sidebar.collapsed { margin-left: -260px; }
+#sidebar-header {
+  padding: 14px 16px 10px 16px;
+  font-weight: 600; font-size: 15px;
+  color: var(--accent);
+  border-bottom: 1px solid var(--border);
+}
+#new-file-btn, #open-file-btn, #open-drive-btn {
+  margin: 10px 12px 0 12px;
+  padding: 10px 12px;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+#new-file-btn { color: var(--heading3); font-weight: 600; }
+#new-file-btn:active, #open-file-btn:active, #open-drive-btn:active { background: var(--border); }
+#recent-label {
+  padding: 14px 16px 6px 16px;
+  font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--muted);
+}
+#recent-list {
+  flex: 1; overflow-y: auto;
+  padding: 0 8px 12px 8px;
+}
+.recent-item {
+  padding: 9px 10px;
+  border-radius: 6px;
+  font-size: 14px;
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+.recent-item:active { background: var(--bg-alt); }
+.recent-empty { color: var(--muted); font-size: 13px; padding: 10px; font-style: italic; }
+
+/* Main area */
+#main {
+  flex: 1; display: flex; flex-direction: column;
+  min-width: 0; height: 100%;
+}
+#topbar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+#toggle-sidebar {
+  background: var(--bg-alt); border: 1px solid var(--border);
+  color: var(--text); border-radius: 6px;
+  width: 36px; height: 36px; font-size: 16px;
+  cursor: pointer;
+}
+#filename {
+  flex: 1; font-size: 14px; color: var(--muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+#content {
+  flex: 1; overflow-y: auto; padding: 16px 16px 60px 16px;
+  -webkit-overflow-scrolling: touch;
+}
+#empty-state {
+  color: var(--muted); text-align: center; margin-top: 60px; font-size: 15px; line-height: 1.6;
+}
+
+/* Org tree */
+.org-node { margin: 0; }
+.heading-row {
+  display: flex; align-items: baseline; gap: 6px;
+  padding: 6px 4px; border-radius: 6px;
+  cursor: pointer; user-select: none;
+}
+.heading-row:active { background: var(--bg-alt); }
+.toggle-arrow {
+  display: inline-block; width: 16px; color: var(--muted);
+  font-size: 12px; transition: transform 0.15s ease; flex-shrink: 0;
+}
+.toggle-arrow.open { transform: rotate(90deg); }
+.toggle-arrow.leaf { visibility: hidden; }
+.heading-text { font-weight: 600; line-height: 1.4; }
+.h1 { font-size: 19px; color: var(--heading1); }
+.h2 { font-size: 18px; color: var(--heading2); }
+.h3 { font-size: 17px; color: var(--heading3); }
+.h4 { font-size: 16.5px; color: var(--heading4); }
+.h5 { font-size: 16px; color: var(--heading5); }
+.h6 { font-size: 16px; color: var(--heading6); }
+
+.todo-kw { font-weight: 700; color: var(--todo); margin-right: 5px; }
+.todo-kw.done { color: var(--done); }
+.priority { color: var(--priority); font-weight: 700; margin-right: 5px; }
+.stat-cookie { color: var(--muted); font-weight: 500; margin-left: 5px; font-size: 0.85em; }
+.tags { float: right; }
+.tag {
+  display: inline-block; background: var(--tag-bg); color: var(--tag-text);
+  font-size: 11px; padding: 2px 7px; border-radius: 4px; margin-left: 4px;
+  font-weight: 500;
+}
+
+.children-wrap { overflow: hidden; }
+.children-wrap.closed { display: none; }
+.node-children { margin-left: 18px; border-left: 1px solid var(--border); padding-left: 8px; }
+
+.body-text {
+  color: var(--text); font-size: 15px; line-height: 1.6;
+  padding: 4px 6px 4px 22px; white-space: pre-wrap; word-break: break-word;
+}
+.timestamp { color: var(--timestamp); font-style: italic; }
+
+.drawer-block { margin-left: 22px; }
+.drawer-toggle {
+  display: inline-flex; align-items: center; gap: 4px;
+  color: var(--drawer); font-size: 12px; cursor: pointer;
+  padding: 3px 6px; border-radius: 4px; border: 1px solid var(--border);
+  margin: 2px 0; user-select: none;
+}
+.drawer-toggle:active { background: var(--bg-alt); }
+.drawer-content {
+  font-size: 13px; color: var(--muted);
+  background: var(--bg-alt); border-radius: 6px;
+  padding: 8px 10px; margin: 4px 0 4px 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.drawer-content.closed { display: none; }
+.prop-row { display: flex; gap: 6px; padding: 1px 0; }
+.prop-key { color: var(--accent); min-width: 110px; }
+.prop-val { color: var(--text); }
+.clock-row { color: var(--clock); padding: 1px 0; }
+.clock-row .clock-kw { color: var(--clock); font-weight: 700; }
+
+/* New file modal */
+#modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+  display: none; align-items: flex-end; justify-content: center; z-index: 50;
+}
+#modal-overlay.show { display: flex; }
+#modal {
+  background: var(--bg); border-top-left-radius: 16px; border-top-right-radius: 16px;
+  width: 100%; max-width: 480px; padding: 18px 18px 28px 18px;
+  border: 1px solid var(--border); border-bottom: none;
+  max-height: 85vh; display: flex; flex-direction: column;
+}
+#modal h3 { margin: 0 0 8px 0; color: var(--accent); font-size: 17px; }
+#modal p.hint { color: var(--muted); font-size: 13px; margin: 0 0 12px 0; line-height: 1.5; }
+#filename-input, #dictation-input { font-size: 16px; }
+#filename-input {
+  background: var(--bg-alt); border: 1px solid var(--border); color: var(--text);
+  border-radius: 8px; padding: 10px 12px; font-size: 14px; margin-bottom: 10px;
+}
+#voice-status {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; background: var(--bg-alt); border-radius: 8px; margin-bottom: 10px;
+}
+#mic-indicator {
+  width: 12px; height: 12px; border-radius: 50%; background: var(--muted); flex-shrink: 0;
+}
+#mic-indicator.listening { background: var(--todo); animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+#voice-status-text { font-size: 13px; color: var(--muted); }
+#live-transcript {
+  font-size: 13px; color: var(--muted); font-style: italic; min-height: 18px; margin-bottom: 8px;
+}
+#org-preview {
+  flex: 1; overflow-y: auto; background: var(--bg-alt); border-radius: 8px;
+  padding: 10px 12px; font-family: ui-monospace, Menlo, monospace; font-size: 13px;
+  white-space: pre-wrap; color: var(--text); min-height: 120px; border: 1px solid var(--border);
+}
+#modal-buttons { display: flex; gap: 10px; margin-top: 14px; }
+.modal-btn {
+  flex: 1; padding: 11px; border-radius: 8px; border: 1px solid var(--border);
+  font-size: 14px; font-weight: 600; cursor: pointer;
+}
+#mic-toggle-btn { background: var(--todo); color: #1e2127; border: none; }
+#save-draft-btn { background: var(--accent); color: #1e2127; border: none; }
+#cancel-modal-btn { background: var(--bg-alt); color: var(--text); }
+#voice-cmds-hint {
+  font-size: 12px; color: var(--muted); line-height: 1.6; margin-top: 10px;
+  border-top: 1px solid var(--border); padding-top: 10px;
+}
+#voice-cmds-hint b { color: var(--text); }
+
+#type-row { display: flex; gap: 8px; margin-bottom: 10px; align-items: stretch; }
+#dictation-input {
+  flex: 1; min-width: 0; background: var(--bg-alt); border: 1px solid var(--border); color: var(--text);
+  border-radius: 8px; padding: 8px 10px; font-size: 16px; font-family: inherit; resize: none;
+}
+#add-text-btn { flex: 0 0 auto; background: var(--bg-alt); color: var(--accent); }
+#save-status { font-size: 12px; color: var(--todo); min-height: 16px; margin-top: 8px; }
+input[type=file] { display: none; }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div id="sidebar">
+    <div id="sidebar-header">📋 Org Viewer</div>
+    <button id="new-file-btn">🎙️ Neue Datei per Sprache</button>
+    <button id="open-file-btn">📂 Datei öffnen</button>
+    <div id="recent-label">Zuletzt geöffnet</div>
+    <div id="recent-list"></div>
+  </div>
+  <div id="main">
+    <div id="topbar">
+      <button id="toggle-sidebar">☰</button>
+      <div id="filename">Keine Datei geöffnet</div>
+    </div>
+    <div id="content">
+      <div id="empty-state">Öffne eine .org-Datei über den Button links,<br>oder erstelle eine neue per Spracheingabe.</div>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="file-input" accept=".org,text/plain">
+
+<div id="modal-overlay">
+  <div id="modal">
+    <h3>Neue Org-Datei per Sprache</h3>
+    <p class="hint">Sag Befehlswörter gefolgt vom Text. Mikrofon antippen zum Starten/Stoppen.</p>
+    <input id="filename-input" type="text" placeholder="Dateiname (ohne .org)" value="neue-datei">
+    <div id="voice-status">
+      <div id="mic-indicator"></div>
+      <div id="voice-status-text">Mikrofon aus</div>
+      <button id="mic-toggle-btn" class="modal-btn" style="flex:0 0 auto; padding:8px 14px;">🎤 Start</button>
+    </div>
+    <div id="live-transcript"></div>
+    <div id="type-row">
+      <textarea id="dictation-input" rows="2" placeholder="Hier tippen oder per Tastatur-Mikrofon diktieren, z. B. „Chapter Einkaufen Checkbox Milch“"></textarea>
+      <button id="add-text-btn" class="modal-btn">Übernehmen</button>
+    </div>
+    <div id="org-preview"></div>
+    <div id="voice-cmds-hint">
+      <b>Chapter</b> / <b>Subchapter</b> / <b>Sub-Subchapter</b> + Text → Überschriftenebene 1–3<br>
+      <b>Bullet</b> + Text → Aufzählungspunkt<br>
+      <b>Checkbox</b> + Text → abhakbarer Punkt (Heading bekommt automatisch [x/y])
+    </div>
+    <div id="save-status"></div>
+    <div id="modal-buttons">
+      <button id="cancel-modal-btn" class="modal-btn">Abbrechen</button>
+      <button id="save-draft-btn" class="modal-btn">💾 Speichern</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---------- Storage ---------- */
+const RECENT_KEY = 'orgviewer_recent_files';
+const MAX_RECENT = 20;
+
+function getRecent() {
+  try { return JSON.parse(localStorage.getItem(RECENT_KEY)) || []; } catch(e) { return []; }
+}
+function saveRecent(list) {
+  try { localStorage.setItem(RECENT_KEY, JSON.stringify(list.slice(0, MAX_RECENT))); } catch(e) {}
+}
+function addRecent(name, content) {
+  let list = getRecent();
+  list = list.filter(f => f.name !== name);
+  list.unshift({ name, content, ts: Date.now() });
+  saveRecent(list);
+  renderRecent();
+}
+function renderRecent() {
+  const list = getRecent();
+  const el = document.getElementById('recent-list');
+  el.innerHTML = '';
+  if (list.length === 0) {
+    el.innerHTML = '<div class="recent-empty">Noch keine Dateien</div>';
+    return;
+  }
+  list.forEach(f => {
+    const div = document.createElement('div');
+    div.className = 'recent-item';
+    div.textContent = f.name;
+    div.onclick = () => { loadOrgContent(f.name, f.content); };
+    el.appendChild(div);
+  });
+}
+
+/* ---------- Org Parser ---------- */
+// Parses org text into a tree of nodes: {level, todo, priority, title, tags, body, drawers, children}
+function parseOrg(text) {
+  const lines = text.split(/\r?\n/);
+  const root = { level: 0, children: [], title: 'root' };
+  const stack = [root];
+  const TODO_KWS = ['TODO','NEXT','WAITING','SOMEDAY','DOING'];
+  const DONE_KWS = ['DONE','CANCELLED','CANCELED'];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    const hMatch = line.match(/^(\*+)\s+(.*)$/);
+    if (hMatch) {
+      const level = hMatch[1].length;
+      let rest = hMatch[2];
+      let todo = null, done = false;
+      for (const kw of TODO_KWS.concat(DONE_KWS)) {
+        if (rest.startsWith(kw + ' ') || rest === kw) {
+          todo = kw; done = DONE_KWS.includes(kw);
+          rest = rest.slice(kw.length).trim();
+          break;
+        }
+      }
+      let priority = null;
+      const pMatch = rest.match(/^\[#([A-C])\]\s*/);
+      if (pMatch) { priority = pMatch[1]; rest = rest.slice(pMatch[0].length); }
+      let tags = [];
+      const tMatch = rest.match(/\s+(:[A-Za-z0-9_@:]+:)\s*$/);
+      if (tMatch) {
+        tags = tMatch[1].split(':').filter(Boolean);
+        rest = rest.slice(0, tMatch.index).trim();
+      }
+      const node = {
+        level, todo, done, priority, title: rest, tags,
+        children: [], bodyLines: [], drawers: []
+      };
+      while (stack.length > 1 && stack[stack.length - 1].level >= level) stack.pop();
+      stack[stack.length - 1].children.push(node);
+      stack.push(node);
+      i++;
+      continue;
+    }
+    // Non-heading line: belongs to current top of stack (last node)
+    const current = stack[stack.length - 1];
+    if (current === root) { i++; continue; }
+
+    // Drawer detection :PROPERTIES: ... :END: or :LOGBOOK: ... :END:
+    const drawerStart = line.match(/^\s*:([A-Za-z0-9_]+):\s*$/);
+    if (drawerStart) {
+      const dname = drawerStart[1];
+      const drawerLines = [];
+      i++;
+      while (i < lines.length && !/^\s*:END:\s*$/i.test(lines[i])) {
+        drawerLines.push(lines[i]);
+        i++;
+      }
+      i++; // skip :END:
+      current.drawers.push({ name: dname, lines: drawerLines });
+      continue;
+    }
+    current.bodyLines.push(line);
+    i++;
+  }
+  return root;
+}
+
+function countCheckboxes(node) {
+  // Count checkboxes in direct body lines (not nested children)
+  let total = 0, checked = 0;
+  for (const l of node.bodyLines) {
+    const m = l.match(/^\s*[-+*]\s+\[([ xX])\]/);
+    if (m) { total++; if (m[1].toLowerCase() === 'x') checked++; }
+  }
+  return { total, checked };
+}
+
+/* ---------- Rendering ---------- */
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function renderInlineText(text) {
+  let t = escapeHtml(text);
+  // timestamps <2026-10-08 Thu> or [2026-10-08 Thu 10:00]
+  t = t.replace(/[<\[]\d{4}-\d{2}-\d{2}[^>\]]*[>\]]/g, m => `<span class="timestamp">${m}</span>`);
+  return t;
+}
+
+function renderBodyLine(line) {
+  const cbMatch = line.match(/^(\s*)([-+*])\s+\[([ xX])\]\s*(.*)$/);
+  if (cbMatch) {
+    const checked = cbMatch[3].toLowerCase() === 'x';
+    const box = checked ? '☑' : '☐';
+    return `${cbMatch[1]}${box} ${renderInlineText(cbMatch[4])}`;
+  }
+  const bulletMatch = line.match(/^(\s*)([-+*])\s+(.*)$/);
+  if (bulletMatch) {
+    return `${bulletMatch[1]}• ${renderInlineText(bulletMatch[3])}`;
+  }
+  return renderInlineText(line);
+}
+
+function renderDrawer(drawer, idx) {
+  const id = 'drawer_' + Math.random().toString(36).slice(2) + idx;
+  let contentHtml = '';
+  if (drawer.name.toUpperCase() === 'PROPERTIES') {
+    contentHtml = drawer.lines.map(l => {
+      const m = l.match(/^\s*:([A-Za-z0-9_\-]+):\s*(.*)$/);
+      if (m) return `<div class="prop-row"><span class="prop-key">${escapeHtml(m[1])}</span><span class="prop-val">${escapeHtml(m[2])}</span></div>`;
+      return `<div class="prop-row">${escapeHtml(l)}</div>`;
+    }).join('');
+  } else if (drawer.name.toUpperCase() === 'LOGBOOK') {
+    contentHtml = drawer.lines.map(l => {
+      const m = l.match(/^(\s*CLOCK:\s*)([<\[][^>\]]*[>\]](?:--[<\[][^>\]]*[>\]])?)(.*)$/i);
+      if (m) {
+        return `<div class="clock-row"><span class="clock-kw">CLOCK:</span> <span class="timestamp">${escapeHtml(m[2])}</span>${escapeHtml(m[3])}</div>`;
+      }
+      return `<div class="clock-row">${escapeHtml(l)}</div>`;
+    }).join('');
+  } else {
+    contentHtml = drawer.lines.map(l => `<div>${escapeHtml(l)}</div>`).join('');
+  }
+  const label = drawer.name.toUpperCase() === 'PROPERTIES' ? '🏷️ Properties' :
+                drawer.name.toUpperCase() === 'LOGBOOK' ? '⏱️ Logbook' : drawer.name;
+  return `
+    <div class="drawer-toggle" data-target="${id}">▸ ${label}</div>
+    <div class="drawer-content closed" id="${id}">${contentHtml || '<em>leer</em>'}</div>
+  `;
+}
+
+function renderNode(node, isTop) {
+  const hLevel = Math.min(node.level, 6);
+  const hasChildren = node.children.length > 0;
+  const hasBody = node.bodyLines.length > 0;
+  const hasDrawers = node.drawers.length > 0;
+  const expandable = hasChildren || hasBody || hasDrawers;
+
+  let todoHtml = '';
+  if (node.todo) {
+    todoHtml = `<span class="todo-kw ${node.done ? 'done' : ''}">${node.todo}</span>`;
+  }
+  let prioHtml = node.priority ? `<span class="priority">[#${node.priority}]</span>` : '';
+
+  const stats = countCheckboxes(node);
+  let statHtml = '';
+  if (stats.total > 0) {
+    statHtml = `<span class="stat-cookie">[${stats.checked}/${stats.total}]</span>`;
+  }
+
+  let tagsHtml = '';
+  if (node.tags.length) {
+    tagsHtml = `<span class="tags">${node.tags.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('')}</span>`;
+  }
+
+  const arrowClass = expandable ? 'toggle-arrow' : 'toggle-arrow leaf';
+  const childId = 'ch_' + Math.random().toString(36).slice(2);
+
+  let bodyHtml = '';
+  if (hasBody) {
+    bodyHtml = `<div class="body-text">${node.bodyLines.map(renderBodyLine).join('\n')}</div>`;
+  }
+  let drawersHtml = '';
+  if (hasDrawers) {
+    drawersHtml = `<div class="drawer-block">${node.drawers.map((d,idx) => renderDrawer(d, idx)).join('')}</div>`;
+  }
+  let childrenHtml = '';
+  if (hasChildren) {
+    childrenHtml = `<div class="node-children">${node.children.map(c => renderNode(c, false)).join('')}</div>`;
+  }
+
+  return `
+    <div class="org-node">
+      <div class="heading-row" data-target="${childId}">
+        <span class="${arrowClass}">▸</span>
+        <span class="heading-text h${hLevel}">${todoHtml}${prioHtml}${renderInlineText(node.title)}${statHtml}</span>
+        ${tagsHtml}
+      </div>
+      <div class="children-wrap closed" id="${childId}">
+        ${bodyHtml}
+        ${drawersHtml}
+        ${childrenHtml}
+      </div>
+    </div>
+  `;
+}
+
+function renderTree(root) {
+  const content = document.getElementById('content');
+  if (!root.children.length) {
+    content.innerHTML = '<div id="empty-state">Diese Datei enthält keine Überschriften.</div>';
+    return;
+  }
+  content.innerHTML = root.children.map(c => renderNode(c, true)).join('');
+}
+
+/* ---------- Event delegation for expand/collapse ---------- */
+document.getElementById('content').addEventListener('click', (e) => {
+  const headingRow = e.target.closest('.heading-row');
+  if (headingRow) {
+    const targetId = headingRow.getAttribute('data-target');
+    const target = document.getElementById(targetId);
+    const arrow = headingRow.querySelector('.toggle-arrow');
+    if (target) {
+      target.classList.toggle('closed');
+      arrow.classList.toggle('open');
+    }
+    return;
+  }
+  const drawerToggle = e.target.closest('.drawer-toggle');
+  if (drawerToggle) {
+    const targetId = drawerToggle.getAttribute('data-target');
+    const target = document.getElementById(targetId);
+    if (target) {
+      target.classList.toggle('closed');
+      drawerToggle.firstChild.textContent = target.classList.contains('closed') ? '▸ ' : '▾ ';
+    }
+  }
+});
+
+/* ---------- File loading ---------- */
+function loadOrgContent(name, text) {
+  document.getElementById('filename').textContent = name;
+  const tree = parseOrg(text);
+  renderTree(tree);
+  addRecent(name, text);
+}
+
+document.getElementById('open-file-btn').addEventListener('click', () => {
+  document.getElementById('file-input').click();
+});
+document.getElementById('file-input').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (evt) => {
+    loadOrgContent(file.name, evt.target.result);
+  };
+  reader.readAsText(file);
+});
+
+/* ---------- Sidebar toggle ---------- */
+document.getElementById('toggle-sidebar').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.toggle('collapsed');
+});
+
+/* ---------- Voice-to-Org ---------- */
+let recognition = null;
+let listening = false;
+let orgDraftNodes = []; // flat list of {level, text, type: 'heading'|'bullet'|'checkbox'}
+
+function buildOrgFromDraft() {
+  let out = [];
+  // Build heading tree to compute checkbox stats per heading
+  // We'll do simple sequential approach: track last heading indices per level
+  let headingStack = []; // {level, lineIndexInOut, checkboxTotal, checkboxChecked}
+  for (const item of orgDraftNodes) {
+    if (item.type === 'heading') {
+      const stars = '*'.repeat(item.level);
+      out.push({ text: `${stars} ${item.text}`, isHeadingFor: item });
+      while (headingStack.length && headingStack[headingStack.length-1].level >= item.level) headingStack.pop();
+      headingStack.push({ level: item.level, outIndex: out.length - 1, total: 0, checked: 0 });
+    } else if (item.type === 'bullet') {
+      out.push({ text: `- ${item.text}` });
+    } else if (item.type === 'checkbox') {
+      out.push({ text: `- [${item.checked ? 'x' : ' '}] ${item.text}` });
+      if (headingStack.length) {
+        const h = headingStack[headingStack.length - 1];
+        h.total++;
+        if (item.checked) h.checked++;
+      }
+    }
+  }
+  // Apply stat cookies
+  for (const h of headingStack) {}
+  // recompute properly: need stats per heading regardless of stack popping; redo with map
+  let statsMap = {}; // outIndex -> {total, checked}
+  let stack2 = [];
+  for (const item of orgDraftNodes) {
+    if (item.type === 'heading') {
+      while (stack2.length && stack2[stack2.length-1].level >= item.level) stack2.pop();
+      stack2.push({ level: item.level, key: item._key });
+    } else if (item.type === 'checkbox' && stack2.length) {
+      const top = stack2[stack2.length - 1];
+      statsMap[top.key] = statsMap[top.key] || { total: 0, checked: 0 };
+      statsMap[top.key].total++;
+      if (item.checked) statsMap[top.key].checked++;
+    }
+  }
+  let finalLines = [];
+  for (const item of orgDraftNodes) {
+    if (item.type === 'heading') {
+      const stars = '*'.repeat(item.level);
+      const stat = statsMap[item._key];
+      const cookie = stat ? ` [${stat.checked}/${stat.total}]` : '';
+      finalLines.push(`${stars} ${item.text}${cookie}`);
+    } else if (item.type === 'bullet') {
+      finalLines.push(`- ${item.text}`);
+    } else if (item.type === 'checkbox') {
+      finalLines.push(`- [${item.checked ? 'x' : ' '}] ${item.text}`);
+    }
+  }
+  return finalLines.join('\n');
+}
+
+function updatePreview() {
+  document.getElementById('org-preview').textContent = buildOrgFromDraft() || '(noch nichts diktiert)';
+}
+
+function processVoiceSegment(raw) {
+  // raw = full transcript piece; parse for keywords
+  let text = raw.trim();
+  if (!text) return;
+  const lower = text.toLowerCase();
+
+  const keywordPatterns = [
+    { re: /\bsub[\s-]?sub[\s-]?chapter\b/i, type: 'heading', level: 3 },
+    { re: /\bsubchapter\b/i, type: 'heading', level: 2 },
+    { re: /\bchapter\b/i, type: 'heading', level: 1 },
+    { re: /\bcheckbox\b/i, type: 'checkbox' },
+    { re: /\bbullet\b/i, type: 'bullet' },
+  ];
+
+  // find all keyword matches with position, sorted by position, pick first occurrence set that splits text into segments
+  let matches = [];
+  for (const kp of keywordPatterns) {
+    let m;
+    const re = new RegExp(kp.re.source, 'gi');
+    while ((m = re.exec(text)) !== null) {
+      matches.push({ index: m.index, len: m[0].length, type: kp.type, level: kp.level });
+    }
+  }
+  matches.sort((a,b) => a.index - b.index);
+  if (matches.length === 0) {
+    // no keyword — append to last item's text if exists
+    if (orgDraftNodes.length) {
+      const last = orgDraftNodes[orgDraftNodes.length - 1];
+      last.text = (last.text + ' ' + text).trim();
+    }
+    updatePreview();
+    return;
+  }
+  for (let i = 0; i < matches.length; i++) {
+    const start = matches[i].index + matches[i].len;
+    const end = i + 1 < matches.length ? matches[i+1].index : text.length;
+    const segText = text.slice(start, end).trim().replace(/^[,.:;]+/, '').trim();
+    const item = { type: matches[i].type, text: segText || '(unbenannt)' };
+    if (matches[i].type === 'heading') {
+      item.level = matches[i].level;
+      item._key = 'k' + Math.random().toString(36).slice(2);
+    }
+    if (matches[i].type === 'checkbox') item.checked = false;
+    orgDraftNodes.push(item);
+  }
+  updatePreview();
+}
+
+function setupRecognition() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return null;
+  const r = new SR();
+  r.lang = 'de-DE';
+  r.continuous = true;
+  r.interimResults = true;
+  r.onresult = (event) => {
+    let interim = '';
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const res = event.results[i];
+      if (res.isFinal) {
+        processVoiceSegment(res[0].transcript);
+      } else {
+        interim += res[0].transcript;
+      }
+    }
+    document.getElementById('live-transcript').textContent = interim;
+  };
+  r.onerror = (e) => {
+    listening = false;
+    document.getElementById('mic-indicator').classList.remove('listening');
+    document.getElementById('mic-toggle-btn').textContent = '🎤 Start';
+    document.getElementById('voice-status-text').textContent = (e.error === 'not-allowed' || e.error === 'service-not-allowed')
+      ? 'Mikrofon gesperrt. Nutze das Tastatur-Mikrofon im Textfeld.' : 'Fehler: ' + e.error;
+  };
+  r.onend = () => {
+    if (listening) {
+      try { r.start(); } catch(e) {}
+    }
+  };
+  return r;
+}
+
+document.getElementById('new-file-btn').addEventListener('click', () => {
+  orgDraftNodes = [];
+  updatePreview();
+  document.getElementById('filename-input').value = 'neue-datei';
+  document.getElementById('live-transcript').textContent = '';
+  document.getElementById('modal-overlay').classList.add('show');
+});
+
+document.getElementById('cancel-modal-btn').addEventListener('click', () => {
+  stopListening();
+  document.getElementById('modal-overlay').classList.remove('show');
+});
+
+document.getElementById('mic-toggle-btn').addEventListener('click', () => {
+  if (!listening) startListening(); else stopListening();
+});
+
+function startListening() {
+  if (!recognition) recognition = setupRecognition();
+  if (!recognition) {
+    document.getElementById('voice-status-text').textContent = 'Mikrofon hier nicht verfügbar. Nutze das Tastatur-Mikrofon im Textfeld.';
+    return;
+  }
+  listening = true;
+  try { recognition.start(); } catch(e) {}
+  document.getElementById('mic-indicator').classList.add('listening');
+  document.getElementById('voice-status-text').textContent = 'Höre zu...';
+  document.getElementById('mic-toggle-btn').textContent = '⏹ Stop';
+}
+function stopListening() {
+  listening = false;
+  if (recognition) { try { recognition.stop(); } catch(e) {} }
+  document.getElementById('mic-indicator').classList.remove('listening');
+  document.getElementById('voice-status-text').textContent = 'Mikrofon aus';
+  document.getElementById('mic-toggle-btn').textContent = '🎤 Start';
+}
+
+document.getElementById('add-text-btn').addEventListener('click', () => {
+  const ta = document.getElementById('dictation-input');
+  if (ta.value.trim()) { processVoiceSegment(ta.value); ta.value = ''; }
+});
+
+document.getElementById('save-draft-btn').addEventListener('click', async () => {
+  stopListening();
+  const pending = document.getElementById('dictation-input').value.trim();
+  if (pending) { processVoiceSegment(pending); document.getElementById('dictation-input').value = ''; }
+  const status = document.getElementById('save-status');
+  status.textContent = '';
+  const name = (document.getElementById('filename-input').value || 'neue-datei').trim();
+  const fullName = name.endsWith('.org') ? name : name + '.org';
+  const orgText = buildOrgFromDraft();
+  if (!orgText) {
+    status.textContent = 'Noch nichts diktiert.';
+    return;
+  }
+  // Datei zum Sichern anbieten (Download-Capability); die Datei bleibt zusätzlich im Verlauf
+  try {
+    const blob = new Blob([orgText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = fullName;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  } catch(e) {}
+
+  loadOrgContent(fullName, orgText);
+  document.getElementById('modal-overlay').classList.remove('show');
+});
+
+/* ---------- Init ---------- */
+renderRecent();
+</script>
+</body>
+</html>
