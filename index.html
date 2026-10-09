@@ -8,6 +8,9 @@
 <meta name="apple-mobile-web-app-title" content="Org Viewer">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#1e2127">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap">
 <title>Org Viewer</title>
 <style>
 :root {
@@ -34,12 +37,14 @@
   --border: #323847;
   --accent: #9ecbff;
 }
+button, input, textarea { font-family: inherit; }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body {
   margin: 0; padding: 0; height: 100%;
   background: var(--bg); color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-  font-size: 16px;
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  -webkit-text-size-adjust: 100%;
   overflow: hidden;
 }
 #app { display: flex; height: 100%; width: 100%; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
@@ -57,7 +62,7 @@ html, body {
 #sidebar.collapsed { margin-left: -260px; }
 #sidebar-header {
   padding: 14px 16px 10px 16px;
-  font-weight: 600; font-size: 15px;
+  font-weight: 600; font-size: 13px;
   color: var(--accent);
   border-bottom: 1px solid var(--border);
 }
@@ -68,7 +73,7 @@ html, body {
   border: 1px solid var(--border);
   border-radius: 8px;
   color: var(--text);
-  font-size: 14px;
+  font-size: 12px;
   text-align: left;
   cursor: pointer;
 }
@@ -84,9 +89,9 @@ html, body {
   padding: 0 8px 12px 8px;
 }
 .recent-item {
-  padding: 9px 10px;
+  padding: 8px 10px;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 12px;
   color: var(--text);
   cursor: pointer;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -113,7 +118,7 @@ html, body {
   cursor: pointer;
 }
 #filename {
-  flex: 1; font-size: 14px; color: var(--muted);
+  flex: 1; font-size: 12px; color: var(--muted);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 #content {
@@ -139,12 +144,12 @@ html, body {
 .toggle-arrow.open { transform: rotate(90deg); }
 .toggle-arrow.leaf { visibility: hidden; }
 .heading-text { font-weight: 600; line-height: 1.4; }
-.h1 { font-size: 19px; color: var(--heading1); }
-.h2 { font-size: 18px; color: var(--heading2); }
-.h3 { font-size: 17px; color: var(--heading3); }
-.h4 { font-size: 16.5px; color: var(--heading4); }
-.h5 { font-size: 16px; color: var(--heading5); }
-.h6 { font-size: 16px; color: var(--heading6); }
+.h1 { font-size: 16px; color: var(--heading1); }
+.h2 { font-size: 15px; color: var(--heading2); }
+.h3 { font-size: 14px; color: var(--heading3); }
+.h4 { font-size: 13.5px; color: var(--heading4); }
+.h5 { font-size: 13px; color: var(--heading5); }
+.h6 { font-size: 13px; color: var(--heading6); }
 
 .todo-kw { font-weight: 700; color: var(--todo); margin-right: 5px; }
 .todo-kw.done { color: var(--done); }
@@ -153,7 +158,7 @@ html, body {
 .tags { float: right; }
 .tag {
   display: inline-block; background: var(--tag-bg); color: var(--tag-text);
-  font-size: 11px; padding: 2px 7px; border-radius: 4px; margin-left: 4px;
+  font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 4px;
   font-weight: 500;
 }
 
@@ -162,7 +167,7 @@ html, body {
 .node-children { margin-left: 18px; border-left: 1px solid var(--border); padding-left: 8px; }
 
 .body-text {
-  color: var(--text); font-size: 15px; line-height: 1.6;
+  color: var(--text); font-size: 12px; line-height: 1.65;
   padding: 4px 6px 4px 22px; white-space: pre-wrap; word-break: break-word;
 }
 .timestamp { color: var(--timestamp); font-style: italic; }
@@ -170,16 +175,16 @@ html, body {
 .drawer-block { margin-left: 22px; }
 .drawer-toggle {
   display: inline-flex; align-items: center; gap: 4px;
-  color: var(--drawer); font-size: 12px; cursor: pointer;
+  color: var(--drawer); font-size: 11px; cursor: pointer;
   padding: 3px 6px; border-radius: 4px; border: 1px solid var(--border);
   margin: 2px 0; user-select: none;
 }
 .drawer-toggle:active { background: var(--bg-alt); }
 .drawer-content {
-  font-size: 13px; color: var(--muted);
+  font-size: 11px; color: var(--muted);
   background: var(--bg-alt); border-radius: 6px;
   padding: 8px 10px; margin: 4px 0 4px 0;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 .drawer-content.closed { display: none; }
 .prop-row { display: flex; gap: 6px; padding: 1px 0; }
@@ -200,8 +205,8 @@ html, body {
   border: 1px solid var(--border); border-bottom: none;
   max-height: 85vh; display: flex; flex-direction: column;
 }
-#modal h3 { margin: 0 0 8px 0; color: var(--accent); font-size: 17px; }
-#modal p.hint { color: var(--muted); font-size: 13px; margin: 0 0 12px 0; line-height: 1.5; }
+#modal h3 { margin: 0 0 8px 0; color: var(--accent); font-size: 14px; }
+#modal p.hint { color: var(--muted); font-size: 11px; margin: 0 0 12px 0; line-height: 1.5; }
 #filename-input, #dictation-input { font-size: 16px; }
 #filename-input {
   background: var(--bg-alt); border: 1px solid var(--border); color: var(--text);
@@ -216,25 +221,25 @@ html, body {
 }
 #mic-indicator.listening { background: var(--todo); animation: pulse 1s infinite; }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
-#voice-status-text { font-size: 13px; color: var(--muted); }
+#voice-status-text { font-size: 11px; color: var(--muted); }
 #live-transcript {
-  font-size: 13px; color: var(--muted); font-style: italic; min-height: 18px; margin-bottom: 8px;
+  font-size: 11px; color: var(--muted); font-style: italic; min-height: 18px; margin-bottom: 8px;
 }
 #org-preview {
   flex: 1; overflow-y: auto; background: var(--bg-alt); border-radius: 8px;
-  padding: 10px 12px; font-family: ui-monospace, Menlo, monospace; font-size: 13px;
+  padding: 10px 12px; font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px;
   white-space: pre-wrap; color: var(--text); min-height: 120px; border: 1px solid var(--border);
 }
 #modal-buttons { display: flex; gap: 10px; margin-top: 14px; }
 .modal-btn {
   flex: 1; padding: 11px; border-radius: 8px; border: 1px solid var(--border);
-  font-size: 14px; font-weight: 600; cursor: pointer;
+  font-size: 12px; font-weight: 600; cursor: pointer;
 }
 #mic-toggle-btn { background: var(--todo); color: #1e2127; border: none; }
 #save-draft-btn { background: var(--accent); color: #1e2127; border: none; }
 #cancel-modal-btn { background: var(--bg-alt); color: var(--text); }
 #voice-cmds-hint {
-  font-size: 12px; color: var(--muted); line-height: 1.6; margin-top: 10px;
+  font-size: 11px; color: var(--muted); line-height: 1.6; margin-top: 10px;
   border-top: 1px solid var(--border); padding-top: 10px;
 }
 #voice-cmds-hint b { color: var(--text); }
@@ -247,30 +252,174 @@ html, body {
 #add-text-btn { flex: 0 0 auto; background: var(--bg-alt); color: var(--accent); }
 #save-status { font-size: 12px; color: var(--todo); min-height: 16px; margin-top: 8px; }
 input[type=file] { display: none; }
+[hidden] { display: none !important; }
+
+/* Code blocks */
+.code-block { margin: 6px 6px 6px 22px; border: 1px solid var(--border); border-radius: 8px; background: var(--sidebar-bg); overflow: hidden; }
+.code-lang {
+  font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted);
+  padding: 4px 10px; border-bottom: 1px solid var(--border); background: var(--bg-alt);
+}
+.code-block pre { margin: 0; padding: 8px 10px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.code-block code { font-family: inherit; font-size: 11px; line-height: 1.55; color: var(--text); white-space: pre; display: block; }
+.quote-block { margin: 6px 6px 6px 22px; padding: 2px 10px; border-left: 3px solid var(--muted); color: var(--muted); font-style: italic; font-size: 12px; white-space: pre-wrap; }
+code.inline { background: var(--bg-alt); border: 1px solid var(--border); border-radius: 4px; padding: 0 4px; font-family: inherit; font-size: 0.95em; color: var(--heading2); }
+/* highlight.js tokens, pastel on dark */
+.hljs-comment, .hljs-quote { color: #6b7280; font-style: italic; }
+.hljs-keyword, .hljs-selector-tag, .hljs-literal, .hljs-doctag { color: #c9a8e9; }
+.hljs-string, .hljs-regexp, .hljs-addition, .hljs-meta .hljs-string { color: #a8d8b9; }
+.hljs-number, .hljs-symbol, .hljs-bullet, .hljs-variable.constant_ { color: #f6c177; }
+.hljs-title, .hljs-title.function_, .hljs-section { color: #9ecbff; }
+.hljs-title.class_, .hljs-type, .hljs-built_in { color: #7fb8c4; }
+.hljs-attr, .hljs-attribute, .hljs-property, .hljs-params, .hljs-template-variable, .hljs-variable { color: #f0a8c0; }
+.hljs-meta, .hljs-tag, .hljs-name, .hljs-selector-class, .hljs-selector-id { color: #f28fad; }
+.hljs-deletion { color: #f28fad; }
+.hljs-emphasis { font-style: italic; }
+.hljs-strong { font-weight: 700; }
+
+/* Topbar icons */
+.icon-btn {
+  background: var(--bg-alt); border: 1px solid var(--border); color: var(--text);
+  border-radius: 8px; width: 40px; height: 40px; font-size: 18px; line-height: 1;
+  cursor: pointer; flex-shrink: 0;
+}
+.icon-btn:active { background: var(--border); }
+#filename { cursor: pointer; padding: 8px 2px; }
+#filename.has-file { color: var(--text); }
+
+/* Landing */
+#landing {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 22px; padding: 24px 16px 60px 16px; text-align: center;
+}
+#record-big {
+  width: 168px; height: 168px; border-radius: 50%;
+  background: var(--bg-alt); border: 3px solid var(--todo);
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  box-shadow: 0 0 0 10px rgba(242,143,173,0.10);
+}
+#record-big:active { transform: scale(0.97); }
+#record-big .rec-dot { width: 72px; height: 72px; border-radius: 50%; background: var(--todo); }
+#record-big.listening .rec-dot { animation: pulse 1s infinite; border-radius: 14px; }
+#landing-label { font-size: 16px; font-weight: 600; color: var(--text); }
+#landing-sub { font-size: 12px; color: var(--muted); line-height: 1.6; max-width: 320px; }
+
+/* Tables */
+.table-wrap { margin: 6px 6px 6px 22px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table.org-table { border-collapse: collapse; font-size: 11.5px; min-width: 100%; }
+.org-table th, .org-table td {
+  border: 1px solid var(--border); padding: 6px 10px; text-align: left; vertical-align: top; line-height: 1.45;
+}
+.org-table th { background: var(--bg-alt); color: var(--heading3); font-weight: 600; white-space: nowrap; }
+.org-table tbody tr:nth-child(even) td { background: rgba(255,255,255,0.025); }
+.org-table td.num, .org-table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Help */
+#help-overlay {
+  position: fixed; inset: 0; z-index: 60; background: var(--bg); overflow-y: auto;
+  padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px calc(env(safe-area-inset-bottom, 0px) + 40px) 16px;
+  -webkit-overflow-scrolling: touch;
+}
+#help-inner { max-width: 640px; margin: 0 auto; }
+#help-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+#help-top h2 { margin: 0; font-size: 18px; color: var(--heading1); }
+#help-inner h3 { margin: 22px 0 6px 0; font-size: 13px; color: var(--heading3); }
+#help-inner p, #help-inner li { font-size: 12px; line-height: 1.6; color: var(--text); }
+#help-inner ul { margin: 6px 0; padding-left: 20px; }
+#help-inner code {
+  background: var(--bg-alt); border: 1px solid var(--border); border-radius: 4px;
+  padding: 1px 6px; font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; color: var(--heading2);
+}
+#help-inner pre {
+  background: var(--bg-alt); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px;
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; overflow-x: auto; color: var(--text);
+}
+
+/* Sidebar as overlay */
+#sidebar { position: fixed; left: 0; top: 0; bottom: 0; z-index: 40; width: 270px; min-width: 270px;
+  padding-top: env(safe-area-inset-top, 0px); box-shadow: 4px 0 24px rgba(0,0,0,0.4); }
+#sidebar.collapsed { margin-left: -290px; box-shadow: none; }
+#app { padding-top: env(safe-area-inset-top, 0px); }
+
 </style>
 </head>
 <body>
 
 <div id="app">
-  <div id="sidebar">
-    <div id="sidebar-header">📋 Org Viewer</div>
-    <button id="new-file-btn">🎙️ Neue Datei per Sprache</button>
-    <button id="open-file-btn">📂 Datei öffnen</button>
-    <div id="recent-label">Zuletzt geöffnet</div>
+  <div id="sidebar" class="collapsed">
+    <div id="sidebar-header">Zuletzt geöffnet</div>
+    <div id="recent-label">Letzte 20 Dateien</div>
     <div id="recent-list"></div>
   </div>
   <div id="main">
     <div id="topbar">
-      <button id="toggle-sidebar">☰</button>
-      <div id="filename">Keine Datei geöffnet</div>
+      <button id="toggle-sidebar" class="icon-btn" aria-label="Verlauf">☰</button>
+      <div id="filename" role="button">Org Viewer</div>
+      <button id="open-file-icon" class="icon-btn" aria-label="Datei öffnen">📂</button>
+      <button id="help-icon" class="icon-btn" aria-label="Hilfe">?</button>
     </div>
-    <div id="content">
-      <div id="empty-state">Öffne eine .org-Datei über den Button links,<br>oder erstelle eine neue per Spracheingabe.</div>
+    <div id="landing">
+      <button id="record-big" aria-label="Aufnehmen"><span class="rec-dot"></span></button>
+      <div id="landing-label">Aufnehmen</div>
+      <div id="landing-sub">Sprich „Chapter …“, „Bullet …“ oder „Checkbox …“ und speichere daraus eine neue Org-Datei.</div>
     </div>
+    <div id="content" hidden></div>
   </div>
 </div>
 
-<input type="file" id="file-input" accept=".org,text/plain">
+<input type="file" id="file-input">
+
+<div id="help-overlay" hidden>
+  <div id="help-inner">
+    <div id="help-top"><h2>Hilfe</h2><button id="help-close" class="icon-btn" aria-label="Schließen">✕</button></div>
+
+    <h3>Kopfzeile</h3>
+    <ul>
+      <li><code>☰</code> Verlauf: die letzten 20 geöffneten Dateien, Antippen öffnet sie wieder.</li>
+      <li>Titel antippen: zurück zur Startseite mit dem Aufnahme-Button.</li>
+      <li><code>📂</code> Datei öffnen: wählt eine Org-Datei aus der Dateien-App.</li>
+      <li><code>?</code> Diese Hilfe.</li>
+    </ul>
+
+    <h3>Org-Dateien lesen</h3>
+    <ul>
+      <li>Beim Öffnen sind alle Überschriften zugeklappt, nur die oberste Ebene ist sichtbar.</li>
+      <li>Eine Überschrift antippen klappt ihren Inhalt und die Unterüberschriften auf oder zu.</li>
+      <li>Properties und Logbook (mit CLOCK-Einträgen) sind in kleinen Schaltflächen versteckt und lassen sich einzeln aufklappen.</li>
+      <li>Farbig markiert sind TODO/DONE, Prioritäten wie <code>[#A]</code>, Tags am Zeilenende und Zeitstempel.</li>
+      <li>Code-Blöcke (<code>#+BEGIN_SRC python</code> … <code>#+END_SRC</code>) werden mit Syntax-Highlighting angezeigt. Die Sprache steht hinter <code>BEGIN_SRC</code>. Das Highlighting braucht Internet.</li>
+      <li><code>=wörtlich=</code> und <code>~code~</code> erscheinen als Inline-Code.</li>
+      <li>Tabellen mit <code>|</code> werden als echte Tabellen gezeigt. Breite Tabellen lassen sich seitlich wischen.</li>
+      <li>Die Anzeige ist nur zum Lesen. Abhaken und Bearbeiten gibt es nicht.</li>
+    </ul>
+
+    <h3>Neue Datei per Sprache</h3>
+    <p>Tippe auf den großen Aufnahme-Button. Dann sprichst du Befehlswörter, gefolgt vom Text:</p>
+    <ul>
+      <li><code>Chapter</code> Text: Überschrift mit einem Stern</li>
+      <li><code>Subchapter</code> Text: Überschrift mit zwei Sternen</li>
+      <li><code>Sub-Subchapter</code> Text: Überschrift mit drei Sternen</li>
+      <li><code>Bullet</code> Text: Aufzählungspunkt</li>
+      <li><code>Checkbox</code> Text: abhakbarer Punkt. Die Überschrift darüber bekommt automatisch einen Zähler wie <code>[0/3]</code>.</li>
+    </ul>
+    <pre>Chapter Einkaufen Checkbox Milch Checkbox Brot Bullet Bio-Qualität</pre>
+    <p>ergibt:</p>
+    <pre>* Einkaufen [0/2]
+- [ ] Milch
+- [ ] Brot
+- Bio-Qualität</pre>
+    <p>Mit dem roten Stopp-Knopf beendest du die Aufnahme. Unter „Speichern“ wird die Datei zum Sichern angeboten und erscheint im Verlauf.</p>
+
+    <h3>Wenn das Mikrofon nicht geht</h3>
+    <p>Safari fragt beim ersten Mal nach Mikrofon-Zugriff und Spracherkennung. Wenn das gesperrt ist, tippe im Aufnahme-Fenster in das Textfeld und nutze das Mikrofon auf der iOS-Tastatur. „Übernehmen“ wandelt den Text in dieselbe Struktur um.</p>
+
+    <h3>Als App auf den Home-Bildschirm</h3>
+    <p>In Safari auf Teilen tippen, dann „Zum Home-Bildschirm“. Danach startet die Seite wie eine App.</p>
+
+    <h3>Datenschutz</h3>
+    <p>Deine Dateien bleiben auf dem Gerät. Der Verlauf liegt nur im Speicher dieses Browsers.</p>
+  </div>
+</div>
 
 <div id="modal-overlay">
   <div id="modal">
@@ -301,6 +450,7 @@ input[type=file] { display: none; }
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script>
 /* ---------- Storage ---------- */
 const RECENT_KEY = 'orgviewer_recent_files';
@@ -345,8 +495,15 @@ function parseOrg(text) {
   const TODO_KWS = ['TODO','NEXT','WAITING','SOMEDAY','DOING'];
   const DONE_KWS = ['DONE','CANCELLED','CANCELED'];
   let i = 0;
+  let inBlock = false, blockEnd = null;
   while (i < lines.length) {
     const line = lines[i];
+    if (inBlock) {
+      stack[stack.length - 1].bodyLines.push(line);
+      if (blockEnd.test(line)) inBlock = false;
+      i++;
+      continue;
+    }
     const hMatch = line.match(/^(\*+)\s+(.*)$/);
     if (hMatch) {
       const level = hMatch[1].length;
@@ -382,6 +539,14 @@ function parseOrg(text) {
     const current = stack[stack.length - 1];
     if (current === root) { i++; continue; }
 
+    const bMatch = line.match(/^\s*#\+begin_(\w+)/i);
+    if (bMatch) {
+      inBlock = true;
+      blockEnd = new RegExp('^\\s*#\\+end_' + bMatch[1] + '\\b', 'i');
+      current.bodyLines.push(line);
+      i++;
+      continue;
+    }
     // Drawer detection :PROPERTIES: ... :END: or :LOGBOOK: ... :END:
     const drawerStart = line.match(/^\s*:([A-Za-z0-9_]+):\s*$/);
     if (drawerStart) {
@@ -420,8 +585,77 @@ function escapeHtml(s) {
 function renderInlineText(text) {
   let t = escapeHtml(text);
   // timestamps <2026-10-08 Thu> or [2026-10-08 Thu 10:00]
-  t = t.replace(/[<\[]\d{4}-\d{2}-\d{2}[^>\]]*[>\]]/g, m => `<span class="timestamp">${m}</span>`);
+  t = t.replace(/(&lt;|\[)\d{4}-\d{2}-\d{2}.*?(&gt;|\])/g, m => `<span class="timestamp">${m}</span>`);
+  t = t.replace(/(^|[\s(])([=~])([^=~\s](?:[^=~]*?[^=~\s])?)\2(?=$|[\s.,;:!?)])/g, (m, pre, d, c) => `${pre}<code class="inline">${c}</code>`);
   return t;
+}
+
+function splitRow(r) {
+  return r.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim());
+}
+function renderTable(rows) {
+  const isSep = r => /-/.test(r) && /^\s*\|[-+|\s:]*\|?\s*$/.test(r);
+  const firstSep = rows.findIndex(isSep);
+  const dataRows = rows.filter(r => !isSep(r));
+  const headCount = firstSep > 0 ? firstSep : 0;
+  const cell = (tag, c) => {
+    const num = /^[-+]?[\d.,]+\s*%?$/.test(c);
+    return `<${tag}${num ? ' class="num"' : ''}>${renderInlineText(c)}</${tag}>`;
+  };
+  const head = dataRows.slice(0, headCount).map(r => '<tr>' + splitRow(r).map(c => cell('th', c)).join('') + '</tr>').join('');
+  const body = dataRows.slice(headCount).map(r => '<tr>' + splitRow(r).map(c => cell('td', c)).join('') + '</tr>').join('');
+  return `<div class="table-wrap"><table class="org-table">${head ? '<thead>' + head + '</thead>' : ''}<tbody>${body}</tbody></table></div>`;
+}
+const LANG_ALIAS = { 'emacs-lisp': 'lisp', elisp: 'lisp', el: 'lisp', sh: 'bash', shell: 'bash', zsh: 'bash',
+  js: 'javascript', ts: 'typescript', py: 'python', yml: 'yaml', 'c++': 'cpp', rs: 'rust', html: 'xml', org: 'plaintext' };
+function dedent(lines) {
+  const ind = lines.filter(l => l.trim()).map(l => l.match(/^\s*/)[0].length);
+  const m = ind.length ? Math.min(...ind) : 0;
+  return lines.map(l => l.slice(Math.min(m, l.match(/^\s*/)[0].length)).replace(/^,(\*|#\+)/, '$1'));
+}
+function renderBlock(kind, lang, lines) {
+  const code = dedent(lines).join('\n');
+  if (kind === 'quote' || kind === 'verse') {
+    return `<div class="quote-block">${escapeHtml(code)}</div>`;
+  }
+  let inner = escapeHtml(code);
+  let label = kind === 'src' ? (lang || 'text') : kind;
+  if (kind === 'src' && typeof hljs !== 'undefined') {
+    const l = LANG_ALIAS[(lang || '').toLowerCase()] || (lang || '').toLowerCase();
+    try {
+      if (l && hljs.getLanguage(l)) inner = hljs.highlight(code, { language: l, ignoreIllegals: true }).value;
+      else if (!l) inner = hljs.highlightAuto(code).value;
+    } catch (e) {}
+  }
+  return `<div class="code-block"><div class="code-lang">${escapeHtml(label)}</div><pre><code class="hljs">${inner}</code></pre></div>`;
+}
+function renderBody(lines) {
+  let html = '', buf = [], i = 0;
+  const flush = () => {
+    if (buf.length) { html += `<div class="body-text">${buf.map(renderBodyLine).join('\n')}</div>`; buf = []; }
+  };
+  while (i < lines.length) {
+    const bm = lines[i].match(/^\s*#\+begin_(\w+)\s*(\S*)/i);
+    if (bm) {
+      flush();
+      const kind = bm[1].toLowerCase();
+      const endRe = new RegExp('^\\s*#\\+end_' + bm[1] + '\\b', 'i');
+      i++;
+      const blk = [];
+      while (i < lines.length && !endRe.test(lines[i])) { blk.push(lines[i]); i++; }
+      i++;
+      html += renderBlock(kind, bm[2], blk);
+      continue;
+    }
+    if (/^\s*\|/.test(lines[i])) {
+      flush();
+      const rows = [];
+      while (i < lines.length && /^\s*\|/.test(lines[i])) { rows.push(lines[i]); i++; }
+      html += renderTable(rows);
+    } else { buf.push(lines[i]); i++; }
+  }
+  flush();
+  return html;
 }
 
 function renderBodyLine(line) {
@@ -495,7 +729,7 @@ function renderNode(node, isTop) {
 
   let bodyHtml = '';
   if (hasBody) {
-    bodyHtml = `<div class="body-text">${node.bodyLines.map(renderBodyLine).join('\n')}</div>`;
+    bodyHtml = renderBody(node.bodyLines);
   }
   let drawersHtml = '';
   if (hasDrawers) {
@@ -556,19 +790,36 @@ document.getElementById('content').addEventListener('click', (e) => {
 });
 
 /* ---------- File loading ---------- */
+function showLanding() {
+  document.getElementById('content').hidden = true;
+  document.getElementById('landing').hidden = false;
+  const f = document.getElementById('filename');
+  f.textContent = 'Org Viewer'; f.classList.remove('has-file');
+}
 function loadOrgContent(name, text) {
-  document.getElementById('filename').textContent = name;
+  document.getElementById('landing').hidden = true;
+  document.getElementById('content').hidden = false;
+  const f = document.getElementById('filename');
+  f.textContent = name; f.classList.add('has-file');
+  document.getElementById('sidebar').classList.add('collapsed');
   const tree = parseOrg(text);
   renderTree(tree);
   addRecent(name, text);
 }
 
-document.getElementById('open-file-btn').addEventListener('click', () => {
+document.getElementById('filename').addEventListener('click', showLanding);
+document.getElementById('help-icon').addEventListener('click', () => { document.getElementById('help-overlay').hidden = false; });
+document.getElementById('help-close').addEventListener('click', () => { document.getElementById('help-overlay').hidden = true; });
+document.getElementById('main').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.add('collapsed');
+});
+document.getElementById('open-file-icon').addEventListener('click', () => {
   document.getElementById('file-input').click();
 });
 document.getElementById('file-input').addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (!file) return;
+  e.target.value = '';
   const reader = new FileReader();
   reader.onload = (evt) => {
     loadOrgContent(file.name, evt.target.result);
@@ -577,7 +828,8 @@ document.getElementById('file-input').addEventListener('change', (e) => {
 });
 
 /* ---------- Sidebar toggle ---------- */
-document.getElementById('toggle-sidebar').addEventListener('click', () => {
+document.getElementById('toggle-sidebar').addEventListener('click', (e) => {
+  e.stopPropagation();
   document.getElementById('sidebar').classList.toggle('collapsed');
 });
 
@@ -714,6 +966,7 @@ function setupRecognition() {
   r.onerror = (e) => {
     listening = false;
     document.getElementById('mic-indicator').classList.remove('listening');
+    document.getElementById('record-big').classList.remove('listening');
     document.getElementById('mic-toggle-btn').textContent = '🎤 Start';
     document.getElementById('voice-status-text').textContent = (e.error === 'not-allowed' || e.error === 'service-not-allowed')
       ? 'Mikrofon gesperrt. Nutze das Tastatur-Mikrofon im Textfeld.' : 'Fehler: ' + e.error;
@@ -726,12 +979,17 @@ function setupRecognition() {
   return r;
 }
 
-document.getElementById('new-file-btn').addEventListener('click', () => {
+function openRecorder() {
   orgDraftNodes = [];
   updatePreview();
   document.getElementById('filename-input').value = 'neue-datei';
   document.getElementById('live-transcript').textContent = '';
+  document.getElementById('save-status').textContent = '';
   document.getElementById('modal-overlay').classList.add('show');
+}
+document.getElementById('record-big').addEventListener('click', () => {
+  openRecorder();
+  startListening();
 });
 
 document.getElementById('cancel-modal-btn').addEventListener('click', () => {
@@ -752,6 +1010,7 @@ function startListening() {
   listening = true;
   try { recognition.start(); } catch(e) {}
   document.getElementById('mic-indicator').classList.add('listening');
+  document.getElementById('record-big').classList.add('listening');
   document.getElementById('voice-status-text').textContent = 'Höre zu...';
   document.getElementById('mic-toggle-btn').textContent = '⏹ Stop';
 }
@@ -759,6 +1018,7 @@ function stopListening() {
   listening = false;
   if (recognition) { try { recognition.stop(); } catch(e) {} }
   document.getElementById('mic-indicator').classList.remove('listening');
+  document.getElementById('record-big').classList.remove('listening');
   document.getElementById('voice-status-text').textContent = 'Mikrofon aus';
   document.getElementById('mic-toggle-btn').textContent = '🎤 Start';
 }
