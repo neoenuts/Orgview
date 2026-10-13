@@ -287,6 +287,14 @@ code.inline { background: var(--bg-alt); border: 1px solid var(--border); border
 #filename { cursor: pointer; padding: 8px 2px; }
 #filename.has-file { color: var(--text); }
 
+.cb { cursor: pointer; display: inline-block; padding: 3px 6px; margin: -3px -2px -3px -6px; font-size: 15px; line-height: 1; color: var(--accent); }
+.cb:active { background: var(--bg-alt); border-radius: 4px; }
+.update-btn {
+  background: var(--accent); color: #1e2127; border: none; border-radius: 8px;
+  height: 40px; padding: 0 12px; font-size: 12px; font-weight: 700; cursor: pointer; flex-shrink: 0;
+}
+.update-btn:active { opacity: 0.8; }
+
 /* Landing */
 #landing {
   flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -355,6 +363,7 @@ table.org-table { border-collapse: collapse; font-size: 11.5px; min-width: 100%;
     <div id="topbar">
       <button id="toggle-sidebar" class="icon-btn" aria-label="Verlauf">☰</button>
       <div id="filename" role="button">Org Viewer</div>
+      <button id="update-btn" class="update-btn" hidden>Update</button>
       <button id="open-file-icon" class="icon-btn" aria-label="Datei öffnen">📂</button>
       <button id="help-icon" class="icon-btn" aria-label="Hilfe">?</button>
     </div>
@@ -390,7 +399,7 @@ table.org-table { border-collapse: collapse; font-size: 11.5px; min-width: 100%;
       <li>Code-Blöcke (<code>#+BEGIN_SRC python</code> … <code>#+END_SRC</code>) werden mit Syntax-Highlighting angezeigt. Die Sprache steht hinter <code>BEGIN_SRC</code>. Das Highlighting braucht Internet.</li>
       <li><code>=wörtlich=</code> und <code>~code~</code> erscheinen als Inline-Code.</li>
       <li>Tabellen mit <code>|</code> werden als echte Tabellen gezeigt. Breite Tabellen lassen sich seitlich wischen.</li>
-      <li>Die Anzeige ist nur zum Lesen. Abhaken und Bearbeiten gibt es nicht.</li>
+      <li>Checkboxen lassen sich antippen. Der Zähler in der Überschrift zählt mit. Sobald du etwas geändert hast, erscheint oben <code>Update</code> und bietet die geänderte Datei zum Sichern an. Wähle dabei denselben Namen und dann „Ersetzen“. Text bearbeiten kannst du nicht.</li>
     </ul>
 
     <h3>Neue Datei per Sprache</h3>
@@ -500,6 +509,7 @@ function parseOrg(text) {
     const line = lines[i];
     if (inBlock) {
       stack[stack.length - 1].bodyLines.push(line);
+      stack[stack.length - 1].bodyIdx.push(i);
       if (blockEnd.test(line)) inBlock = false;
       i++;
       continue;
@@ -527,7 +537,7 @@ function parseOrg(text) {
       }
       const node = {
         level, todo, done, priority, title: rest, tags,
-        children: [], bodyLines: [], drawers: []
+        children: [], bodyLines: [], bodyIdx: [], drawers: [], lineNo: i
       };
       while (stack.length > 1 && stack[stack.length - 1].level >= level) stack.pop();
       stack[stack.length - 1].children.push(node);
@@ -544,6 +554,7 @@ function parseOrg(text) {
       inBlock = true;
       blockEnd = new RegExp('^\\s*#\\+end_' + bMatch[1] + '\\b', 'i');
       current.bodyLines.push(line);
+      current.bodyIdx.push(i);
       i++;
       continue;
     }
@@ -562,6 +573,7 @@ function parseOrg(text) {
       continue;
     }
     current.bodyLines.push(line);
+    current.bodyIdx.push(i);
     i++;
   }
   return root;
@@ -569,8 +581,11 @@ function parseOrg(text) {
 
 function countCheckboxes(node) {
   // Count checkboxes in direct body lines (not nested children)
-  let total = 0, checked = 0;
+  let total = 0, checked = 0, endRe = null;
   for (const l of node.bodyLines) {
+    if (endRe) { if (endRe.test(l)) endRe = null; continue; }
+    const bm = l.match(/^\s*#\+begin_(\w+)/i);
+    if (bm) { endRe = new RegExp('^\\s*#\\+end_' + bm[1] + '\\b', 'i'); continue; }
     const m = l.match(/^\s*[-+*]\s+\[([ xX])\]/);
     if (m) { total++; if (m[1].toLowerCase() === 'x') checked++; }
   }
@@ -629,10 +644,10 @@ function renderBlock(kind, lang, lines) {
   }
   return `<div class="code-block"><div class="code-lang">${escapeHtml(label)}</div><pre><code class="hljs">${inner}</code></pre></div>`;
 }
-function renderBody(lines) {
+function renderBody(lines, idxs) {
   let html = '', buf = [], i = 0;
   const flush = () => {
-    if (buf.length) { html += `<div class="body-text">${buf.map(renderBodyLine).join('\n')}</div>`; buf = []; }
+    if (buf.length) { html += `<div class="body-text">${buf.map(([l, ix]) => renderBodyLine(l, ix)).join('\n')}</div>`; buf = []; }
   };
   while (i < lines.length) {
     const bm = lines[i].match(/^\s*#\+begin_(\w+)\s*(\S*)/i);
@@ -652,18 +667,20 @@ function renderBody(lines) {
       const rows = [];
       while (i < lines.length && /^\s*\|/.test(lines[i])) { rows.push(lines[i]); i++; }
       html += renderTable(rows);
-    } else { buf.push(lines[i]); i++; }
+    } else { buf.push([lines[i], idxs ? idxs[i] : undefined]); i++; }
   }
   flush();
   return html;
 }
 
-function renderBodyLine(line) {
+function renderBodyLine(line, idx) {
   const cbMatch = line.match(/^(\s*)([-+*])\s+\[([ xX])\]\s*(.*)$/);
   if (cbMatch) {
     const checked = cbMatch[3].toLowerCase() === 'x';
     const box = checked ? '☑' : '☐';
-    return `${cbMatch[1]}${box} ${renderInlineText(cbMatch[4])}`;
+    const boxHtml = idx === undefined ? box
+      : `<span class="cb" data-line="${idx}" role="checkbox" aria-checked="${checked}">${box}</span>`;
+    return `${cbMatch[1]}${boxHtml} ${renderInlineText(cbMatch[4])}`;
   }
   const bulletMatch = line.match(/^(\s*)([-+*])\s+(.*)$/);
   if (bulletMatch) {
@@ -715,8 +732,10 @@ function renderNode(node, isTop) {
 
   const stats = countCheckboxes(node);
   let statHtml = '';
+  let titleText = node.title;
   if (stats.total > 0) {
     statHtml = `<span class="stat-cookie">[${stats.checked}/${stats.total}]</span>`;
+    titleText = titleText.replace(/\s*\[\d*\/\d*\]\s*$/, '');
   }
 
   let tagsHtml = '';
@@ -729,7 +748,7 @@ function renderNode(node, isTop) {
 
   let bodyHtml = '';
   if (hasBody) {
-    bodyHtml = renderBody(node.bodyLines);
+    bodyHtml = renderBody(node.bodyLines, node.bodyIdx);
   }
   let drawersHtml = '';
   if (hasDrawers) {
@@ -742,9 +761,9 @@ function renderNode(node, isTop) {
 
   return `
     <div class="org-node">
-      <div class="heading-row" data-target="${childId}">
+      <div class="heading-row" data-target="${childId}" data-hline="${node.lineNo}">
         <span class="${arrowClass}">▸</span>
-        <span class="heading-text h${hLevel}">${todoHtml}${prioHtml}${renderInlineText(node.title)}${statHtml}</span>
+        <span class="heading-text h${hLevel}">${todoHtml}${prioHtml}${renderInlineText(titleText)}${statHtml}</span>
         ${tagsHtml}
       </div>
       <div class="children-wrap closed" id="${childId}">
@@ -767,6 +786,8 @@ function renderTree(root) {
 
 /* ---------- Event delegation for expand/collapse ---------- */
 document.getElementById('content').addEventListener('click', (e) => {
+  const cb = e.target.closest('.cb');
+  if (cb) { toggleCheckbox(cb); return; }
   const headingRow = e.target.closest('.heading-row');
   if (headingRow) {
     const targetId = headingRow.getAttribute('data-target');
@@ -789,14 +810,68 @@ document.getElementById('content').addEventListener('click', (e) => {
   }
 });
 
+/* ---------- Checkboxes abhaken ---------- */
+let curLines = [], curEol = '\n', curName = '', dirty = false;
+function setDirty(v) {
+  dirty = v;
+  document.getElementById('update-btn').hidden = !v;
+}
+function toggleCheckbox(cb) {
+  const idx = parseInt(cb.dataset.line, 10);
+  const re = /^(\s*[-+*]\s+\[)([ xX])(\])/;
+  const m = (curLines[idx] || '').match(re);
+  if (!m) return;
+  const nowChecked = m[2] === ' ';
+  curLines[idx] = curLines[idx].replace(re, `$1${nowChecked ? 'X' : ' '}$3`);
+  cb.textContent = nowChecked ? '☑' : '☐';
+  cb.setAttribute('aria-checked', String(nowChecked));
+  // Zähler der zugehörigen Überschrift neu berechnen
+  const wrap = cb.closest('.children-wrap');
+  if (wrap) {
+    const boxes = wrap.querySelectorAll(':scope > .body-text .cb');
+    const total = boxes.length;
+    let checked = 0;
+    boxes.forEach(b => { if (b.textContent === '☑') checked++; });
+    const row = wrap.previousElementSibling;
+    const stat = row && row.querySelector('.stat-cookie');
+    if (stat) stat.textContent = `[${checked}/${total}]`;
+    const hl = row ? parseInt(row.dataset.hline, 10) : NaN;
+    if (!isNaN(hl) && curLines[hl] !== undefined) {
+      curLines[hl] = curLines[hl].replace(/\[\d*\/\d*\]/, `[${checked}/${total}]`);
+    }
+  }
+  setDirty(true);
+  // Verlauf-Eintrag mit dem geänderten Text aktuell halten
+  const list = getRecent();
+  const entry = list.find(f => f.name === curName);
+  if (entry) { entry.content = curLines.join(curEol); saveRecent(list); }
+}
+document.getElementById('update-btn').addEventListener('click', () => {
+  const text = curLines.join(curEol);
+  try {
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = curName || 'datei.org';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  } catch (e) {}
+  setDirty(false);
+});
+
 /* ---------- File loading ---------- */
 function showLanding() {
+  document.getElementById('update-btn').hidden = true;
   document.getElementById('content').hidden = true;
   document.getElementById('landing').hidden = false;
   const f = document.getElementById('filename');
   f.textContent = 'Org Viewer'; f.classList.remove('has-file');
 }
 function loadOrgContent(name, text) {
+  curLines = text.split(/\r?\n/);
+  curEol = text.indexOf('\r\n') >= 0 ? '\r\n' : '\n';
+  curName = name;
+  setDirty(false);
   document.getElementById('landing').hidden = true;
   document.getElementById('content').hidden = false;
   const f = document.getElementById('filename');
